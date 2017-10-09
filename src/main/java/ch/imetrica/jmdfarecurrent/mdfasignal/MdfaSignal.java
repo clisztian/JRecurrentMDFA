@@ -31,7 +31,7 @@ public class MdfaSignal {
 	int MasterSignalVal;
 	int FilterLength; 
 	UnitSignal[] UnitSignals;
-	
+	private int whichSignal = 0;
 	private double CurrentMid;
 
 	
@@ -366,8 +366,7 @@ public class MdfaSignal {
 		  
 		  for(int j = 0; j < 1; j++) {
 			  System.out.print(UnitSignals[j].getValue(i) + ", ");			  
-		  }
-		  //System.out.println(UnitSignals[NumberOfUnits-1].getValue(i));		
+		  }		
 		  System.out.println(targetSignal.get(i).getValue());	
 	    }			
 	}
@@ -382,8 +381,7 @@ public class MdfaSignal {
 		  
 		  for(int j = 0; j < 1; j++) {
 			  System.out.print(UnitSignals[j].getValue(UnitSignals[j].getSize() - 1 - i) + ", ");			  
-		  }
-		  //System.out.println(UnitSignals[NumberOfUnits-1].getValue(i));		
+		  }		
 		  System.out.print(targetSignal.get(targetSignal.size() - 1 - i).getValue() + ", ");
 		  System.out.println(h_t.get(h_t.size() - 1 - i).getValue());
 	    }			
@@ -437,18 +435,79 @@ public class MdfaSignal {
 		}
 
 	}
+
+	public double getTargetSignal(int observation) {
+		
+		return targetSignal.get(observation).getValue();
+	}
+	
+	public String getTargetSignalDate(int observation) {
+		
+		return targetSignal.get(observation).getDateTime();
+	}	
 	
 	
+	public double getPrice(int observation) {
+		
+		return MyPriceSeries.get(observation).getValue();
+	}
+	
+	public String getPriceDate(int observation) {
+		
+		return MyPriceSeries.get(observation).getDateTime();
+	}
+	
+	public double getTargetTradeSignal(int observation) {
+		
+		if(targetSignal.get(observation).getValue() > 0) {
+			return 1.0;
+		}
+		else if(targetSignal.get(observation).getValue() < 0) {
+			return -1.0;
+		}
+		else return 0.0;
+	}
+
+	public int getNumberObservations() {		
+		return targetSignal.size();
+	}
 	
 
-//	double[] step = eurusd.getLatestStep();
-//	
-//	for(int j = 0; j < step.length; j++) {
-//		System.out.print(step[j] + " ");
-//	}
-//	System.out.println("");
-    
-    
+	public void setSignalType(int signalType) throws Exception {
+		
+		if(signalType > NumberOfUnits || signalType < 0) {
+			throw new Exception("Signal type should 0 for targetSignal or 1 - NumberOfUnit for UnitSignals");
+		}		
+		this.whichSignal = signalType;
+	}
+	
+	public double getTradeSignal(int observation) {
+		
+		if(whichSignal == 0) {
+			return getTargetTradeSignal(observation);
+		}
+		else {
+			
+			if(UnitSignals[whichSignal-1].getValue(observation) > 0) {
+				return 1.0;
+			}
+			else if(UnitSignals[whichSignal-1].getValue(observation) < 0) {
+				return -1.0;
+			}
+			else return 0.0;	
+		}		
+	}
+ 
+	public String getTradeSignalDate(int observation) {
+		
+		if(whichSignal == 0) {
+			return getTargetSignalDate(observation);
+		}
+		else {			
+			return UnitSignals[whichSignal-1].getDateTime(observation);	
+		}		
+	}	
+	
     
 	
 }
