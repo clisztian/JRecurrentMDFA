@@ -2,6 +2,7 @@ package ch.imetrica.jmdfarecurrent.mdfasignal;
 
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 
@@ -27,6 +28,7 @@ public class MdfaSignalStrategySimulator {
 	
 	double currentMasterSignal = 0; 
 	double previousMasterSignal = 0; 
+	double targetSignal = 0;
 	
 	MdfaSignal eurusd;
 	private long lotSize;
@@ -51,9 +53,12 @@ public class MdfaSignalStrategySimulator {
 		
 		
 		long ONELOT = 100; 
-		CSVReader reader = new CSVReader(new FileReader("data/QQQ.IB.dat"));
+		CSVReader reader = new CSVReader(new FileReader("data/EEM.IB.dat"));
     	String [] nextLine;
     	   	
+    	PrintWriter writer = new PrintWriter("output/strategy.txt");
+    	
+    	
     	ArrayList<String> streamDates = new ArrayList<String>();
     	ArrayList<Double> streamPrice = new ArrayList<Double>();
     	
@@ -69,8 +74,7 @@ public class MdfaSignalStrategySimulator {
     	int L1 = L;
     	double frequency = Math.PI/5.0;
     	double[] frequencies = new double[5];
-    	
-    	
+    	    	
     	frequencies[0] = Math.PI/30.0; 
     	frequencies[1] = Math.PI/22.0;
     	frequencies[2] = Math.PI/16.0;
@@ -86,7 +90,8 @@ public class MdfaSignalStrategySimulator {
     	signal.computeHistoricalSignals();
     	signal.computeSymmetricFilter(L1, frequency);
     	signal.computeSymmetricSignal();
-		signal.setSignalType(0);
+		signal.setSignalType(5);
+		
 		
     	for(int i = 900; i < 1000; i++) {     	
     		signal.addObservation(streamDates.get(i), streamPrice.get(i), streamPrice.get(i));   		
@@ -103,7 +108,8 @@ public class MdfaSignalStrategySimulator {
 		simulator.createCashBalance("STRATEGY", Currency.USD, new BigDecimal(1000000.0));
 		
 		
-		
+		int signalMatch = 0;
+		int signalMatchAttempts = 0;
 		int observation = 0; 
 		int maxObservations = signal.getNumberObservations();
 		
@@ -116,7 +122,14 @@ public class MdfaSignalStrategySimulator {
 		    previousMasterSignal = currentMasterSignal; 
 		    currentMasterSignal = signal.getTradeSignal(observation);
 			
-			System.out.println(date_stamp + ", " + price + ", " +  signal.getTradeSignalDate(observation) + ", " + currentMasterSignal);
+		    targetSignal = signal.getTargetTradeSignal(observation);
+		    
+		    signalMatchAttempts++;
+		    if(currentMasterSignal == targetSignal) {
+		    	signalMatch++;
+		    }
+		    
+			//System.out.println(date_stamp + ", " + price + ", " +  signal.getTradeSignalDate(observation) + ", " + currentMasterSignal);
 			
 	      	/* Handle signal entry/exit logic */
 	      	if(currentMasterSignal != previousMasterSignal) {
@@ -124,7 +137,7 @@ public class MdfaSignalStrategySimulator {
     	    	  if(previousMasterSignal == 0) { lotSize = ONELOT;} 
     	    	  else lotSize = 2*ONELOT;
     	    	  
-	      	      if(currentMasterSignal == 0) {    	    	    
+	      	      if(targetSignal == 0) {    	    	    
 	      	    	    
 	      	    	    lotSize = ONELOT;
 	      	    	    if(previousMasterSignal > 0) {	      	    	      	
@@ -147,7 +160,6 @@ public class MdfaSignalStrategySimulator {
 	      	    	  	      	    	  
 	      	    	  order = new LimitOrder(Side.BUY, lotSize, eurusd, bollinger, new BigDecimal(price));
 	      	    	  simulator.sendOrder(order);
-	      	    	  
 	      	      }
 	      	      else if(currentMasterSignal < previousMasterSignal) { //Sell order
 	      	    	  
@@ -159,9 +171,14 @@ public class MdfaSignalStrategySimulator {
 	      	      /*Log current position*/
 	      	      Position position = simulator.findPositionByStrategyAndSecurity(bollinger.getName(), eurusd);
 	   	    	  LOGGER.info(position.toString());	
-	      	}		      
-			observation++;
-	   }
+	      	}
+	      
+	      	String rplot = "" + date_stamp + ", " + price + ", " + simulator.findPositionByStrategyAndSecurity(bollinger.getName(), eurusd).getRealizedPL();
+	      	writer.println(rplot);
+	      	observation++;
+	    }
+		writer.close();
+		System.out.println("Signal match percentage " + 100.0*((double)signalMatch/signalMatchAttempts));
 	
 	}
 	

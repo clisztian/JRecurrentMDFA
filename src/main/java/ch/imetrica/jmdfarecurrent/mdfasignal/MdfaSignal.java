@@ -24,6 +24,8 @@ public class MdfaSignal {
 	private TimeSeries<Double> h_t;
 	private TimeSeries<Double> x_t;
 	
+	double signalCoefficient = 1;
+	
 	TransformData transform; 
 	
 	@Getter
@@ -489,10 +491,10 @@ public class MdfaSignal {
 		else {
 			
 			if(UnitSignals[whichSignal-1].getValue(observation) > 0) {
-				return 1.0;
+				return signalCoefficient*1.0;
 			}
 			else if(UnitSignals[whichSignal-1].getValue(observation) < 0) {
-				return -1.0;
+				return -1.0*signalCoefficient;
 			}
 			else return 0.0;	
 		}		
@@ -508,6 +510,8 @@ public class MdfaSignal {
 		}		
 	}	
 	
-    
+    public void setSignalCoefficent(double coeff) {
+    	signalCoefficient = coeff;
+    }
 	
 }
