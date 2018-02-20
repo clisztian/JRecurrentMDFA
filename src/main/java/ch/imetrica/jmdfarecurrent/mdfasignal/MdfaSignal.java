@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.opencsv.CSVReader;
 
+import ch.imetrica.jmdfarecurrent.observation.DataStep;
 import ch.imetrica.jmdfarecurrent.timeseries.TimeSeries;
 import ch.imetrica.jmdfarecurrent.transformdata.BoxCox;
 import ch.imetrica.jmdfarecurrent.transformdata.TransformData;
@@ -162,7 +163,8 @@ public class MdfaSignal {
 	        }			
 			UnitSignals[i].addEntry(MyTimeSeries.get(t).getDateTime(), sums[i]);		  
           }
-	    }	
+	    }
+		
 	}
 	
 
@@ -194,6 +196,7 @@ public class MdfaSignal {
 
 	public void computeSymmetricSignal() {
 	
+		System.out.println("Time series length " + MyTimeSeries.size());
 		int N = MyTimeSeries.size();
 		double sum = 0; 
 		
@@ -247,6 +250,7 @@ public class MdfaSignal {
 		    	sum = sum + bc[l]*MyTimeSeries.get(i+l).getValue();
 		    } 
 		    for(int l=1;l<L1;l++) {
+		    	System.out.println("i - l " + (i-l) + " " + i + " " + l);
 		    	sum = sum + bc[l]*MyTimeSeries.get(i-l).getValue();
 		    }
 		    targetSignal.set(i, MyTimeSeries.get(i).getDateTime(), sum);	   
@@ -278,6 +282,48 @@ public class MdfaSignal {
 		}		
 	}
 	
+	
+	public DataStep getStep(int t, boolean target) throws Exception {
+		
+		
+		double[] step = new double[NumberOfUnits + 1];
+		
+		step[0] = MyTimeSeries.get(t + (L1-1)).getValue();
+		String lastDate = MyTimeSeries.get(t + (L1-1)).getDateTime();
+				
+		for(int i = 0; i < NumberOfUnits; i++) {
+		  
+		   if(lastDate.equals(UnitSignals[i].getDateTime(t))) {
+				  step[i+1] = UnitSignals[i].getValue(t);
+		   }
+		   else {
+		      throw new Exception("Latest date in UnitSignal " + i + " don't match series");
+		   }			
+	    }	
+		
+		if(target) {
+			
+			double[] targetOutput = new double[2];
+    		targetOutput[0] = 1.0; targetOutput[1] = 0.0;
+    		
+    		double output = targetSignal.get(t).getValue();
+    		
+    		System.out.println(lastDate + ", " + targetSignal.get(t).getDateTime() + ", " + output);
+    		
+    		if(output < 0) {
+    			targetOutput[0] = 0.0; targetOutput[1] = 1.0;
+    		}    		
+			
+			return new DataStep(step, targetOutput);
+		}
+		else {			
+			return new DataStep(step, null);
+		}
+			
+		
+	}
+	
+	
 
 	public double[] getLatestStep() throws Exception {
 		
@@ -298,6 +344,30 @@ public class MdfaSignal {
 		return values;
 	}
 	
+
+	public double[] getLatestObservation() throws Exception {
+		
+		double[] values = new double[NumberOfUnits + 1];	
+		String lastDate = MyPriceSeries.last().getDateTime();
+		values[0] = MyTimeSeries.last().getValue();
+		
+		for(int i = 0; i < NumberOfUnits; i++) {
+		  if(lastDate.equals(UnitSignals[i].getDateTime())) {
+			  values[i+1] = UnitSignals[i].getValue();
+		  }
+		  else {
+			  throw new Exception("Latest date in UnitSignal " + i + " don't match series");
+		  }			
+		}		
+		System.out.print(lastDate + ", ");
+		return values;
+	}
+	
+	public double getLatestTargetObservation() {
+		
+		System.out.println(targetSignal.last().getDateTime());
+		return targetSignal.last().getValue();
+	}
 	
     public String getCurrentDateTime() {
     	return MyPriceSeries.last().getDateTime();

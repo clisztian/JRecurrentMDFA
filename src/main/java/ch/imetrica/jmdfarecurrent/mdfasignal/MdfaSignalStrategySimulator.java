@@ -13,7 +13,6 @@ import com.opencsv.CSVReader;
 
 import ch.algotrader.entity.Position;
 import ch.algotrader.entity.security.Security;
-import ch.algotrader.entity.strategy.CashBalance;
 import ch.algotrader.entity.strategy.Strategy;
 import ch.algotrader.entity.trade.LimitOrder;
 import ch.algotrader.enumeration.Currency;
@@ -187,8 +186,7 @@ public class MdfaSignalStrategySimulator {
 	public static void main(String[] args) throws Exception { 
 		
 		
-		MdfaSignalStrategySimulator simulate = new MdfaSignalStrategySimulator();
-		
+		MdfaSignalStrategySimulator simulate = new MdfaSignalStrategySimulator();		
 		simulate.simuateStrategy();
 		
 	}
